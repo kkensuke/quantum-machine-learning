@@ -1,4 +1,6 @@
-# Quantum Classification
+# Quantum Machine Learning
+
+## Quantum Classification
 
 `classical_quantum_classification.ipynb`: We see the trainability of quantum machine learning classification compared with classical one.
 
