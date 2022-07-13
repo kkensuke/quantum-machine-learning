@@ -274,7 +274,7 @@ class quantum_classifier:
         plt.show()
 
     def accuracy(self, test_inputs, test_outputs):
-        """Calculate the accuracy of prediction by the variational circuit.
+        """Calculate the accuracy of the predictions by the circuit.
         Returns:
             accuracy (float): the accuracy of the prediction
         """
@@ -283,8 +283,7 @@ class quantum_classifier:
         predictions = self.softmax([SOFTMAX_SCALE * circuit(self.optparams, x) for x in test_inputs])
         predictions = np.round(predictions).astype(int)
 
-        self.outputs = test_outputs; self.relabel()
-        self.outputs = np.array(self.outputs.astype(int).ravel())
+        self.outputs = test_outputs.astype(int).ravel(); self.relabel()
 
         labels = np.arange(len(set(self.outputs))).astype(int)
         predictions = predictions @ labels # one-hot to label
