@@ -283,9 +283,9 @@ class quantum_classifier:
         predictions = self.softmax([SOFTMAX_SCALE * circuit(self.optparams, x) for x in test_inputs])
         predictions = np.round(predictions).astype(int)
 
-        self.outputs = test_outputs.astype(int).ravel(); self.relabel()
+        self.outputs = test_outputs.astype(int).ravel()
 
-        labels = np.arange(len(set(self.outputs))).astype(int)
+        labels = np.arange(self.nlabels).astype(int)
         predictions = predictions @ labels # one-hot to label
 
         accuracy = float(np.sum(predictions == self.outputs)/len(self.outputs))
