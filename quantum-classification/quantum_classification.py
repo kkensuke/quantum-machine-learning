@@ -235,8 +235,15 @@ class quantum_classifier:
         self.cost_list = []
         params = self.make_initial_params()
 
-        #opt = qml.GradientDescentOptimizer(self.stepsize)
-        opt = qml.AdamOptimizer(self.stepsize) # seems better
+        '''When using the standard NumPy interface, Pennylane provides several built-in optimizers. Some of these, like QNGOptimizer, are specific to quantum optimization.
+        Adagrad Optimizer 	Gradient descent optimizer with past-gradient-dependent learning rate in each dimension.
+        AdamOptimizer 	Gradient descent optimizer with adaptive learning rate, first and second moment.
+        GradientDescentOptimizer 	Basic gradient descent optimizer.
+        Momentum Optimizer 	Gradient descent optimizer with momentum
+        NesterovMomentumOptimizer 	Gradient descent optimizer with Nesterov momentum.
+        QNGOptimizer 	Optimizer with adaptive learning rate, via calculation of the diagonal or block-diagonal approximation to the Fubini-Study metric tensor.
+        RMSPropOptimizer 	Root mean squared propagation optimizer.'''
+        opt = qml.AdamOptimizer(self.stepsize)
 
         if self.cost_type == 'MSE':
             for i in range(self.steps):
