@@ -26,7 +26,7 @@ class quantum_classifier:
             stepsize (float): the stepsize of optimization
             steps (int): the number of steps of optimization
         """
-        self.inputs = inputs * INPUT_SCALE # there is a freedom of how to convert the inputs into angles
+        self.inputs = inputs * INPUT_SCALE # there is a freedom of how to convert the inputs into angles (np.arcsin(input[i]) or np.arccos(input[i]**2) ref. QCL)
         self.outputs = np.array(outputs).astype(int).ravel()
         self.nlabels = len(set(self.outputs))
         self.nqubits = nqubits
@@ -73,16 +73,16 @@ class quantum_classifier:
             input(array[float]): input data
         """
 
-        if self.embedding_type == 'TPE': # input size must be equal to or less than nqubits
+        if self.embedding_type == 'TPE':
             for i in range(self.input_size):
-                qml.RX(input[i], wires=i) # np.arcsin(input[i]) or np.arccos(input[i]**2) ref. QCL
+                qml.RX(input[i], wires=i)
                 qml.RY(input[i], wires=i)
-        elif self.embedding_type == 'HEE': # input size must be equal to or less than nqubits
+        elif self.embedding_type == 'HEE':
             for i in range(self.input_size):
                 qml.RX(input[i], wires=i)
             for i in range(self.input_size - 1):
                 qml.CNOT(wires=[i, i + 1])
-        elif self.embedding_type == 'CHE': # input size must be equal to or less than nqubits
+        elif self.embedding_type == 'CHE':
             for i in range(self.input_size):
                 qml.Hadamard(wires=i)
                 qml.RZ(input[i], wires=i)
@@ -91,7 +91,7 @@ class quantum_classifier:
                     qml.CNOT(wires=[i, j])
                     qml.RZ(input[i]*input[j], wires=j)
                     qml.CNOT(wires=[i, j])
-        elif self.embedding_type == 'APE': # input_data size must be equal to or less than 2**nqubits
+        elif self.embedding_type == 'APE':
             qml.AmplitudeEmbedding(features=input, wires=range(self.input_size), pad_with=1, normalize=True)
         elif self.embedding_type == 'NON':
             pass
@@ -227,7 +227,7 @@ class quantum_classifier:
         opt = qml.AdamOptimizer(self.stepsize)
 
         for _ in range(self.steps):
-            self.inputs, self.outputs = shuffle(self.inputs, self.outputs)
+            self.inputs, self.outputs = shuffle(self.inputs, self.outputs) # better to split into smaller batches
             params, cost_temp = opt.step_and_cost(self.cost, params)
             
             self.cost_list.append(cost_temp)
