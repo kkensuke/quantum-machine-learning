@@ -27,7 +27,7 @@ class quantum_classifier:
             steps (int): the number of steps of optimization
         """
         self.inputs = inputs * INPUT_SCALE # there is a freedom of how to convert the inputs into angles
-        self.outputs = np.array(outputs).astype(int).ravel() # labels must be non negative integers
+        self.outputs = np.array(outputs).astype(int).ravel()
         self.nlabels = len(set(self.outputs))
         self.nqubits = nqubits
         self.nlayers = nlayers
