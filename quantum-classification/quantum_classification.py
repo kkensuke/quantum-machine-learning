@@ -186,7 +186,7 @@ class quantum_classifier:
         return np.eye(self.nlabels)[self.relabel(self.outputs)].astype(int)
 
     def cost(self, params):
-        """ Mean squared error cost function of the variational circuit.
+        """ Cost function of the variational circuit.
         Args:
             params (array[float]): array of parameters
         Returns:
@@ -219,7 +219,7 @@ class quantum_classifier:
         self.cost_list = []
         params = self.make_initial_params()
 
-        '''When using the standard NumPy interface, Pennylane provides several built-in optimizers. sSome of these, like QNGOptimizer, are specific to quantum optimization.
+        '''When using the standard NumPy interface, Pennylane provides several built-in optimizers. Some of these, like QNGOptimizer, are specific to quantum optimization.
         Adagrad Optimizer 	Gradient descent optimizer with past-gradient-dependent learning rate in each dimension.
         AdamOptimizer 	Gradient descent optimizer with adaptive learning rate, first and second moment.
         GradientDescentOptimizer 	Basic gradient descent optimizer.
