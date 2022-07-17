@@ -41,7 +41,7 @@ class quantum_classifier:
         if self.embedding_type == 'TPE' or self.embedding_type == 'HEE' or self.embedding_type == 'CHE' or self.embedding_type == 'APE' or self.embedding_type == 'NON':
             pass
         else:
-            raise NameError('Input the correct embedding type')
+            raise ValueError('Input the correct embedding type')
         
         self.input_size = len(self.inputs[0])
         if self.ansatz_type == 'TPA' or self.ansatz_type == 'HEA' or self.ansatz_type == 'SEA':
@@ -60,7 +60,7 @@ class quantum_classifier:
         if self.ansatz_type == 'TPA' or self.ansatz_type == 'HEA' or self.ansatz_type == 'SEA':
             pass
         else:
-            raise NameError('Input the correct ansatz type')
+            raise ValueError('Input the correct ansatz type')
         
         if cost_type == 'MSE' or cost_type == 'LOG':
             pass
@@ -149,28 +149,10 @@ class quantum_classifier:
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
-            # local sum; [qml.probs(wires=i) for i in range(wires)]
-            # global; qml.probs(wires=range(wires))
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(self.nlabels)]
         
         circuit = qml.QNode(func, dev)
         return circuit
-
-    def cost_mse(self, params):
-        """ Mean squared error cost function of the variational circuit.
-        Args:
-            params (array[float]): array of parameters
-        Returns:
-            cost (float): the cost of mean squared error
-        """
-        circuit = self.make_circuit()
-
-        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x) for x in self.inputs])
-        predictions = np.array([x[1] for x in predictions])
-        self.outputs = np.array(self.outputs)
-        cost = np.mean((predictions - self.outputs)**2)
-        
-        return cost
 
     def softmax(self, x):
         x = np.array(x)
@@ -182,29 +164,43 @@ class quantum_classifier:
     def np_log(self, x):
         return np.log(np.clip(a=x, a_min=1e-10, a_max=1e+10))
     
-    def relabel(self):
+    def relabel(self, outputs):
         bool = False
-        for a in set(self.outputs):
+        set_outputs = set(self.outputs)
+
+        for a in set_outputs:
             if a < 0:
                 bool = True
             else:
                 pass
         
         if bool:
-            counter = 0
-            for a in set(self.outputs):
-                for y in range(len(self.outputs)):
-                    if self.outputs[y] == a:
-                        self.outputs[y] = counter
-                    else:
-                        pass
-                counter += 1
-        else:
-            pass
+            outputs_to_positive = dict(zip(sorted(list(set_outputs)),range(len(set_outputs))))
+            outputs_ = np.array([outputs_to_positive[x] for x in outputs])
+
+        return outputs_
 
     def one_hot(self):
-        self.relabel()
-        return np.eye(self.nlabels)[self.outputs].astype(int)
+        self.labels = self.relabel(self.outputs).astype(int)
+        return np.eye(self.nlabels)[self.relabel(self.outputs).astype(int)].astype(int)
+
+    def cost_mse(self, params):
+        """ Mean squared error cost function of the variational circuit.
+        Args:
+            params (array[float]): array of parameters
+        Returns:
+            cost (float): the cost of mean squared error
+        """
+        circuit = self.make_circuit()
+        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x) for x in self.inputs])
+        one_hot_outputs = self.one_hot()
+
+        results = []
+        for (pd,l) in zip(predictions, one_hot_outputs):
+            results.append(np.sum([(l[j] - pd[j])**2 for j in range(self.nlabels)]))
+
+        cost = np.mean(np.array(results))
+        return cost
 
     def cost_log(self, params):
         """ Cross entropy cost function of the variational circuit.
@@ -215,12 +211,11 @@ class quantum_classifier:
         """
 
         circuit = self.make_circuit()
-        # SOFTMAX_SCALE is the number that makes the prediction almost range [0,1].
         predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x) for x in self.inputs])
         one_hot_outputs = self.one_hot()
 
         results = []
-        for (pd,l) in zip(predictions,one_hot_outputs):
+        for (pd,l) in zip(predictions, one_hot_outputs):
             results.append(-np.sum([l[j]*self.np_log(pd[j]) for j in range(self.nlabels)]))
 
         cost = np.mean(np.array(results))
@@ -289,12 +284,11 @@ class quantum_classifier:
         
         predictions = self.softmax([SOFTMAX_SCALE * circuit(self.optparams, x) for x in test_inputs * INPUT_SCALE])
         predictions = np.round(predictions).astype(int)
-
-        test_outputs = test_outputs.astype(int).ravel()
-
         labels = np.arange(self.nlabels).astype(int)
         predictions = predictions @ labels # one-hot to label
 
-        accuracy = float(np.sum(predictions == test_outputs)/len(test_outputs))
+        test_outputs_relabeled = self.relabel(np.array(test_outputs).astype(int).ravel())
+
+        accuracy = float(np.sum(predictions == test_outputs_relabeled)/len(test_outputs_relabeled))
 
         return accuracy
