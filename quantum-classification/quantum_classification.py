@@ -177,7 +177,6 @@ class quantum_classifier:
         if bool:
             outputs_to_positive = dict(zip(sorted(list(set_outputs)),range(len(set_outputs))))
             outputs_ = np.array([outputs_to_positive[x] for x in outputs]).astype(int)
-        
         else:
             outputs_ = outputs.copy()
 
@@ -209,7 +208,7 @@ class quantum_classifier:
         Args:
             params (array[float]): array of parameters
         Returns:
-            cost (float): the cost of log loss
+            cost (float): the cost of cross entropy
         """
 
         circuit = self.make_circuit()
@@ -284,9 +283,9 @@ class quantum_classifier:
         """
         circuit = self.make_circuit()
         
+        labels = np.arange(self.nlabels).astype(int)
         predictions = self.softmax([SOFTMAX_SCALE * circuit(self.optparams, x) for x in test_inputs * INPUT_SCALE])
         predictions = np.round(predictions).astype(int)
-        labels = np.arange(self.nlabels).astype(int)
         predictions = predictions @ labels # one-hot to label
 
         test_outputs_relabeled = self.relabel(np.array(test_outputs).astype(int).ravel())
