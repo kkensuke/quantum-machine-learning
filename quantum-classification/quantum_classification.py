@@ -70,9 +70,7 @@ class quantum_classifier:
     def embedding(self, input):
         """ Embedding templates for the variational circuit.
         Args:
-            input(array[float]): array of input data
-            embedding_type (str): the types of embedding circuit; Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE), 
-                                                                Classically Hard Embedding (CHE), Amplitude Embedding (APE)
+            input(array[float]): input data
         """
 
         if self.embedding_type == 'TPE': # input size must be equal to or less than nqubits
