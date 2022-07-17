@@ -181,7 +181,6 @@ class quantum_classifier:
         return outputs_
 
     def one_hot(self):
-        self.labels = self.relabel(self.outputs).astype(int)
         return np.eye(self.nlabels)[self.relabel(self.outputs).astype(int)].astype(int)
 
     def cost_mse(self, params):
