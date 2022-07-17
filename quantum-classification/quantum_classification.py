@@ -229,7 +229,7 @@ class quantum_classifier:
         RMSPropOptimizer 	Root mean squared propagation optimizer.'''
         opt = qml.AdamOptimizer(self.stepsize)
 
-        for i in range(self.steps):
+        for _ in range(self.steps):
             self.inputs, self.outputs = shuffle(self.inputs, self.outputs)
             params, cost_temp = opt.step_and_cost(self.cost, params)
             
