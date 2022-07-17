@@ -176,7 +176,7 @@ class quantum_classifier:
         
         if bool:
             outputs_to_positive = dict(zip(sorted(list(set_outputs)),range(len(set_outputs))))
-            outputs_ = np.array([outputs_to_positive[x] for x in outputs])
+            outputs_ = np.array([outputs_to_positive[x] for x in outputs]).astype(int)
         
         else:
             outputs_ = outputs.copy()
@@ -184,7 +184,7 @@ class quantum_classifier:
         return outputs_
 
     def one_hot(self):
-        return np.eye(self.nlabels)[self.relabel(self.outputs).astype(int)].astype(int)
+        return np.eye(self.nlabels)[self.relabel(self.outputs)].astype(int)
 
     def cost_mse(self, params):
         """ Mean squared error cost function of the variational circuit.
