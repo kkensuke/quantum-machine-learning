@@ -177,6 +177,9 @@ class quantum_classifier:
         if bool:
             outputs_to_positive = dict(zip(sorted(list(set_outputs)),range(len(set_outputs))))
             outputs_ = np.array([outputs_to_positive[x] for x in outputs])
+        
+        else:
+            outputs_ = outputs.copy()
 
         return outputs_
 
