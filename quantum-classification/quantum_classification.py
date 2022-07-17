@@ -37,6 +37,7 @@ class quantum_classifier:
         self.shots = shots
         self.stepsize = stepsize
         self.steps = steps
+        self.params = None
         
         if self.embedding_type == 'TPE' or self.embedding_type == 'HEE' or self.embedding_type == 'CHE' or self.embedding_type == 'APE' or self.embedding_type == 'NON':
             pass
@@ -208,13 +209,12 @@ class quantum_classifier:
         return cost
 
     def optimize(self):
-        """Optimize the variational circuit.
-        Returns:
-            optimized params (array[float]): array of optimized parameters
-            cost_list (array[float]): array of cost history
-        """
-        self.cost_list = []
-        params = self.make_initial_params()
+        """Optimize the variational circuit."""
+
+        if self.params is None:
+            self.params = self.make_initial_params()
+        else:
+            pass
 
         '''When using the standard NumPy interface, Pennylane provides several built-in optimizers. Some of these, like QNGOptimizer, are specific to quantum optimization.
         Adagrad Optimizer 	Gradient descent optimizer with past-gradient-dependent learning rate in each dimension.
@@ -226,15 +226,13 @@ class quantum_classifier:
         RMSPropOptimizer 	Root mean squared propagation optimizer.'''
         opt = qml.AdamOptimizer(self.stepsize)
 
+        self.cost_list = []
         for _ in range(self.steps):
-            self.inputs, self.outputs = shuffle(self.inputs, self.outputs) # better to split into smaller batches
-            params, cost_temp = opt.step_and_cost(self.cost, params)
+            self.params, cost_temp = opt.step_and_cost(self.cost, self.params) # better to split into smaller batches
             
             self.cost_list.append(cost_temp)
-
-        self.optparams = params
         
-        #return self.optparams, self.cost_list
+        #return self.params, self.cost_list
 
     def draw_circuit(self):
         params = self.make_initial_params()
@@ -260,7 +258,7 @@ class quantum_classifier:
         circuit = self.make_circuit()
         
         labels = np.arange(self.nlabels).astype(int)
-        predictions = self.softmax([SOFTMAX_SCALE * circuit(self.optparams, x) for x in test_inputs * INPUT_SCALE])
+        predictions = self.softmax([SOFTMAX_SCALE * circuit(self.params, x) for x in test_inputs * INPUT_SCALE])
         predictions = np.round(predictions).astype(int)
         predictions = predictions @ labels # one-hot to label
 
