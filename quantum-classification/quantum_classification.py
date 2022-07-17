@@ -185,39 +185,27 @@ class quantum_classifier:
     def one_hot(self):
         return np.eye(self.nlabels)[self.relabel(self.outputs)].astype(int)
 
-    def cost_mse(self, params):
+    def cost(self, params):
         """ Mean squared error cost function of the variational circuit.
         Args:
             params (array[float]): array of parameters
         Returns:
-            cost (float): the cost of mean squared error
+            cost (float)
         """
         circuit = self.make_circuit()
         predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x) for x in self.inputs])
         one_hot_outputs = self.one_hot()
 
         results = []
-        for (pd,l) in zip(predictions, one_hot_outputs):
-            results.append(np.sum([(l[j] - pd[j])**2 for j in range(self.nlabels)]))
 
-        cost = np.mean(np.array(results))
-        return cost
-
-    def cost_log(self, params):
-        """ Cross entropy cost function of the variational circuit.
-        Args:
-            params (array[float]): array of parameters
-        Returns:
-            cost (float): the cost of cross entropy
-        """
-
-        circuit = self.make_circuit()
-        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x) for x in self.inputs])
-        one_hot_outputs = self.one_hot()
-
-        results = []
-        for (pd,l) in zip(predictions, one_hot_outputs):
-            results.append(-np.sum([l[j]*self.np_log(pd[j]) for j in range(self.nlabels)]))
+        if self.cost_type == 'MSE':
+            for (pd,l) in zip(predictions, one_hot_outputs):
+                results.append(np.sum([(l[j] - pd[j])**2 for j in range(self.nlabels)]))
+        elif self.cost_type == 'LOG':
+            for (pd,l) in zip(predictions, one_hot_outputs):
+                results.append(-np.sum([l[j]*self.np_log(pd[j]) for j in range(self.nlabels)]))
+        else:
+            pass
 
         cost = np.mean(np.array(results))
         return cost
@@ -241,21 +229,12 @@ class quantum_classifier:
         RMSPropOptimizer 	Root mean squared propagation optimizer.'''
         opt = qml.AdamOptimizer(self.stepsize)
 
-        if self.cost_type == 'MSE':
-            for i in range(self.steps):
-                self.inputs, self.outputs = shuffle(self.inputs, self.outputs)
-                params, cost_temp = opt.step_and_cost(self.cost_mse, params)
-                
-                self.cost_list.append(cost_temp)
-                
-        elif self.cost_type == 'LOG':
-            for i in range(self.steps):
-                self.inputs, self.outputs = shuffle(self.inputs, self.outputs)
-                params, cost_temp = opt.step_and_cost(self.cost_log, params)
-                self.cost_list.append(cost_temp)
-        else:
-            pass
-        
+        for i in range(self.steps):
+            self.inputs, self.outputs = shuffle(self.inputs, self.outputs)
+            params, cost_temp = opt.step_and_cost(self.cost, params)
+            
+            self.cost_list.append(cost_temp)
+
         self.optparams = params
         
         #return self.optparams, self.cost_list
