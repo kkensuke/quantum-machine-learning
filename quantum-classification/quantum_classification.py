@@ -1,11 +1,9 @@
-from cProfile import label
 import sys
 sys.path.append('/Users/kensuke/github/physics/qc/quantum-computation-ref/venv/lib/python3.8/site-packages')
 
 import matplotlib.pyplot as plt
 import pennylane as qml
 from pennylane import numpy as np
-from sklearn.utils import shuffle
 
 INPUT_SCALE = np.pi/2
 SOFTMAX_SCALE = 10
@@ -181,7 +179,7 @@ class quantum_classifier:
             return outputs
 
     def one_hot(self):
-        return np.eye(self.nlabels)[self.relabel(self.outputs)].astype(int)
+        return np.eye(self.nlabels)[self.relabel(self.outputs)]
 
     def cost(self, params):
         """ Cost function of the variational circuit.
