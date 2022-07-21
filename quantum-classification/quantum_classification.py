@@ -9,13 +9,14 @@ INPUT_SCALE = np.pi/2
 SOFTMAX_SCALE = 10
 
 class quantum_classifier:
-    def __init__(self, inputs, outputs, nqubits, nlayers, embedding_type, ansatz_type, cost_type, shots=None, stepsize=0.1, steps=100):
+    def __init__(self, inputs, outputs, nqubits, embedding_nlayers, ansatz_nlayers, embedding_type, ansatz_type, cost_type, shots=None, stepsize=0.1, steps=100):
         """ Initialize the classifier.
         Args:
             inputs (list[float]): array of input data
             outputs (list[int]): array of output data
             nqubits (int): the number of qubits in the circuit
-            nlayers (int): the number of layers of random ansatz in the circuit
+            embedding_nlayers (int): the number of layers of embedding (except for APE)
+            ansatz_nlayers (int): the number of layers of ansatz
             embedding_type (str): type of embedding circuit
             ansatz_type (str): the types of ansatz circuit; Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE), 
                                                             Classically Hard Embedding (CHE), Amplitude Embedding (APE)
@@ -29,7 +30,8 @@ class quantum_classifier:
         self.input_size = len(self.inputs[0])
         self.nlabels = len(set(self.outputs))
         self.nqubits = nqubits
-        self.nlayers = nlayers
+        self.embedding_nlayers = embedding_nlayers
+        self.ansatz_nlayers = ansatz_nlayers
         self.embedding_type = embedding_type
         self.ansatz_type = ansatz_type
         self.cost_type = cost_type
@@ -73,23 +75,26 @@ class quantum_classifier:
         """
 
         if self.embedding_type == 'TPE':
-            for i in range(self.input_size):
-                qml.RX(input[i], wires=i)
-                qml.RY(input[i], wires=i)
+            for _ in range(self.embedding_nlayers):
+                for i in range(self.input_size):
+                    qml.RX(input[i], wires=i)
+                    qml.RY(input[i], wires=i)
         elif self.embedding_type == 'HEE':
-            for i in range(self.input_size):
-                qml.RX(input[i], wires=i)
-            for i in range(self.input_size - 1):
-                qml.CNOT(wires=[i, i + 1])
+            for _ in range(self.embedding_nlayers):
+                for i in range(self.input_size):
+                    qml.RX(input[i], wires=i)
+                for i in range(self.input_size - 1):
+                    qml.CNOT(wires=[i, i + 1])
         elif self.embedding_type == 'CHE':
-            for i in range(self.input_size):
-                qml.Hadamard(wires=i)
-                qml.RZ(input[i], wires=i)
-            for i in range(self.input_size - 1):
-                for j in range(i+1, self.input_size):
-                    qml.CNOT(wires=[i, j])
-                    qml.RZ(input[i]*input[j], wires=j)
-                    qml.CNOT(wires=[i, j])
+            for _ in range(self.embedding_nlayers):
+                for i in range(self.input_size):
+                    qml.Hadamard(wires=i)
+                    qml.RZ(input[i], wires=i)
+                for i in range(self.input_size - 1):
+                    for j in range(i+1, self.input_size):
+                        qml.CNOT(wires=[i, j])
+                        qml.RZ(input[i]*input[j], wires=j)
+                        qml.CNOT(wires=[i, j])
         elif self.embedding_type == 'APE':
             qml.AmplitudeEmbedding(features=input, wires=range(self.input_size), pad_with=1, normalize=True)
         elif self.embedding_type == 'NON':
@@ -103,11 +108,11 @@ class quantum_classifier:
             params (array[float]): array of parameters
         """
         if self.ansatz_type == 'TPA':
-            params = np.random.uniform(0, np.pi, size=self.nqubits*self.nlayers)
+            params = np.random.uniform(0, np.pi, size=self.nqubits*self.ansatz_nlayers)
         elif self.ansatz_type == 'HEA':
-            params = np.random.uniform(0, np.pi, size=self.nqubits*self.nlayers)
+            params = np.random.uniform(0, np.pi, size=self.nqubits*self.ansatz_nlayers)
         elif self.ansatz_type == 'SEA':
-            shape = qml.StronglyEntanglingLayers.shape(self.nlayers, n_wires=self.nqubits)
+            shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
             params = np.random.random(size=shape)
         else:
             pass
@@ -117,12 +122,12 @@ class quantum_classifier:
         """ Ansatz templates for the variational circuit. """
         
         if self.ansatz_type == 'TPA':
-            for i in range(self.nlayers):
+            for i in range(self.ansatz_nlayers):
                 for j in range(self.nqubits):
                     qml.RX(params[self.nqubits*i+j], wires=j)
                     qml.RY(params[self.nqubits*i+j], wires=j)
         elif self.ansatz_type == 'HEA':
-            for i in range(self.nlayers):
+            for i in range(self.ansatz_nlayers):
                 for j in range(self.nqubits):
                     qml.RX(params[self.nqubits*i+j], wires=j)
                     qml.RY(params[self.nqubits*i+j], wires=j)
@@ -240,11 +245,9 @@ class quantum_classifier:
     
     def plot_cost(self):
         label = f'{self.embedding_type}, {self.ansatz_type}'
-        plt.plot(self.cost_list, label=label)
+        plt.semilogy(self.cost_list, label=label)
         plt.xlabel('Steps')
         plt.ylabel('Cost')
-        plt.ylim(-0.01, np.max(self.cost_list)+0.1)
-        plt.legend()
         plt.legend()
         plt.show()
 
