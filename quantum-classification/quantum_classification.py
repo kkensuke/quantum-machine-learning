@@ -26,6 +26,7 @@ class quantum_classifier:
         """
         self.inputs = inputs * INPUT_SCALE # there is a freedom of how to convert the inputs into angles (np.arcsin(input[i]) or np.arccos(input[i]**2) ref. QCL)
         self.outputs = np.array(outputs).astype(int).ravel()
+        self.input_size = len(self.inputs[0])
         self.nlabels = len(set(self.outputs))
         self.nqubits = nqubits
         self.nlayers = nlayers
@@ -42,7 +43,6 @@ class quantum_classifier:
         else:
             raise ValueError('Input the correct embedding type')
         
-        self.input_size = len(self.inputs[0])
         if self.ansatz_type == 'TPA' or self.ansatz_type == 'HEA' or self.ansatz_type == 'SEA':
             if self.input_size <= self.nqubits:
                 pass
