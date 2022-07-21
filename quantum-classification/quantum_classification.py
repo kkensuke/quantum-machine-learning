@@ -46,22 +46,22 @@ class quantum_classifier:
             raise ValueError('Input the correct embedding type')
         
         if self.ansatz_type == 'TPA' or self.ansatz_type == 'HEA' or self.ansatz_type == 'SEA':
+            pass
+        else:
+            raise ValueError('Input the correct ansatz type')
+
+        if self.ansatz_type == 'TPA' or self.ansatz_type == 'HEA' or self.ansatz_type == 'SEA':
             if self.input_size <= self.nqubits:
                 pass
             else:
-                raise ValueError('inputs_size must be less than or equal to  nqubits')
+                raise ValueError('inputs_size must be less than or equal to  nqubits when ansatz_type is TPA, HEA, or SEA')
         elif self.ansatz_type == 'APE':
             if self.input_size <= 2**self.nqubits:
                 pass
             else:
-                raise ValueError('inputs_size must be less than or equal to 2^nqubits')
+                raise ValueError('inputs_size must be less than or equal to 2^nqubits when ansatz_type is APE')
         else:
             pass
-        
-        if self.ansatz_type == 'TPA' or self.ansatz_type == 'HEA' or self.ansatz_type == 'SEA':
-            pass
-        else:
-            raise ValueError('Input the correct ansatz type')
         
         if cost_type == 'MSE' or cost_type == 'LOG':
             pass
@@ -156,14 +156,13 @@ class quantum_classifier:
         circuit = qml.QNode(func, dev)
         return circuit
 
-    def softmax(self, x):
+    def softmax(self, x): # avoid exp overflow
         x = np.array(x)
-        x -= x.max(axis=1, keepdims=True) # avoid exp overflow
+        x -= x.max(axis=1, keepdims=True)
         x_exp = np.exp(x)
         return x_exp / np.sum(x_exp, axis=1, keepdims=True)
 
-    # avoid log(0)
-    def np_log(self, x):
+    def np_log(self, x): # avoid log(0)
         return np.log(np.clip(a=x, a_min=1e-10, a_max=1e+10))
     
     def relabel(self, outputs):
